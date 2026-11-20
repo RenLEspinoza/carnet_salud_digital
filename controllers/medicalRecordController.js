@@ -65,7 +65,51 @@ const deleteMedicalRecord = async (req, res) => {
   }
 };
 
+// Actualizar registro médico (Ruta Privada)
+const updateRecord = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type, title, dateApplied, nextDueDate, notes } = req.body;
+
+    if (!title || !dateApplied) {
+      return res.status(400).json({
+        message: "El título y la fecha de aplicación son obligatorios.",
+      });
+    }
+
+    const record = await MedicalRecord.findOne({
+      where: { id },
+      include: [{ model: Pet, where: { userId: req.user.id } }],
+    });
+
+    if (!record) {
+      return res.status(404).json({
+        message: "Registro médico no encontrado o sin permisos.",
+      });
+    }
+
+    await record.update({
+      type: type || record.type,
+      title,
+      dateApplied,
+      nextDueDate: nextDueDate || null,
+      notes: notes || null,
+    });
+
+    return res.status(200).json({
+      message: "Registro médico actualizado.",
+      record,
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ message: "Error al actualizar el registro médico." });
+  }
+};
+
 module.exports = {
   addMedicalRecord,
   deleteMedicalRecord,
+  updateRecord,
 };
