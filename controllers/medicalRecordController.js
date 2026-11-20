@@ -3,8 +3,8 @@ const { MedicalRecord, Pet } = require("../models");
 // Agregar un registro médico/vacuna a una mascota (Ruta Privada)
 const addMedicalRecord = async (req, res) => {
   try {
-    const { petId } = req.params;
-    const { type, title, dateApplied, nextDueDate, notes } = req.body;
+    // const { petId } = req.params;
+    const { petId, type, title, dateApplied, nextDueDate, notes } = req.body;
 
     if (!type || !title || !dateApplied) {
       return res.status(400).json({
@@ -29,7 +29,7 @@ const addMedicalRecord = async (req, res) => {
       dateApplied,
       nextDueDate,
       notes,
-      petId: pet.id,
+      petId,
     });
 
     res.status(201).json({

@@ -6,6 +6,7 @@ const petRoutes = require("./routes/petRoutes");
 const medicalRecordRoutes = require("./routes/medicalRecordRoutes");
 require("dotenv").config();
 
+const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -20,6 +21,7 @@ app.get("/", (req, res) => {
 
 // ...middlewares express.json() y cors()...
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // Servir archivos estáticos desde la carpeta uploads
 app.use("/api/auth", authRoutes);
 app.use("/api/pets", petRoutes);
 app.use("/api/records", medicalRecordRoutes);

@@ -465,12 +465,22 @@ Body JSON:
 _Prueba exitosa_
 
 **4. Ver Ficha Pública por publicId (Ficha de Carnet Digital):**
-GET http://localhost:3000/api/pets/public/<publicId_de_Palta>
-_Respuesta esperada: Datos de Cachupín + arreglo MedicalRecords con la vacuna recién creada._
+GET http://localhost:3000/api/pets/public/<publicId*de_Palta>
+\_Respuesta esperada: Datos de Cachupín + arreglo MedicalRecords con la vacuna recién creada.*
 _Prueba exitosa_
 
 **5. Prueba extra: Prueba de generación de la imagen del código QR**
 Método: GET
-URL: http://localhost:3000/api/pets/public/TU_PUBLIC_ID_AQUI/qr
+URL: http://localhost:3000/api/pets/public/TU*PUBLIC_ID_AQUI/qr
 Hacer clic en Send.
-_Prueba exitosa_
+\_Prueba exitosa*
+
+# Fase 3 (v1.1): Refinamiento Operativo y Mejoras de UX (POST-MVP Hardening & UX)
+
+### Paso 1: Buscador en tiempo real y descarga directa de QR por paciente.
+
+### Paso 2: Edición y eliminación de registros (CRUD completo).
+
+### Paso 3: Estandarización de variables de entorno (VITE_API_URL).
+
+### Paso 4: Rediseño visual del Carnet Público y micro-interacciones.

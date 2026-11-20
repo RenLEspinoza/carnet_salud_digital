@@ -7,7 +7,7 @@ const {
 } = require("../controllers/medicalRecordController");
 
 // Rutas protegidas por JWT
-router.post("/pet/:petId", verifyToken, addMedicalRecord);
+router.post("/", verifyToken, addMedicalRecord);
 router.delete("/:id", verifyToken, deleteMedicalRecord);
 
 module.exports = router;
