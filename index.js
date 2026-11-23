@@ -11,7 +11,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middlewares
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 app.use(express.json());
 
 // Ruta de prueba
@@ -25,13 +31,6 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // Servir 
 app.use("/api/auth", authRoutes);
 app.use("/api/pets", petRoutes);
 app.use("/api/records", medicalRecordRoutes);
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }),
-);
 
 // Middleware para capturar JSON malformado
 app.use((err, req, res, next) => {
