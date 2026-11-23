@@ -1,19 +1,37 @@
 // controllers/petController.js
 const crypto = require("crypto");
 const QRCode = require("qrcode");
-const { Pet, MedicalRecord } = require("../models");
-const fs = require("fs");
-const path = require("path");
+const { User, Pet, MedicalRecord } = require("../models");
+// const fs = require("fs");
+// const path = require("path");
+const { cloudinary } = require("../middlewares/upload");
 
-// Función auxiliar para eliminar la foto antigua de la mascota si existe
-const deleteLocalPhoto = (photoUrl) => {
-  if (!photoUrl || !photoUrl.startsWith("/uploads/")) return;
-  const fullPath = path.join(__dirname, "..", photoUrl);
-  fs.unlink(fullPath, (err) => {
-    if (err && err.code !== "ENOENT") {
-      console.error("Error al eliminar imagen antigua:", err);
-    }
-  });
+// // Función auxiliar para eliminar la foto antigua de la mascota si existe
+// const deleteLocalPhoto = (photoUrl) => {
+//   if (!photoUrl || !photoUrl.startsWith("/uploads/")) return;
+//   const fullPath = path.join(__dirname, "..", photoUrl);
+//   fs.unlink(fullPath, (err) => {
+//     if (err && err.code !== "ENOENT") {
+//       console.error("Error al eliminar imagen antigua:", err);
+//     }
+//   });
+// };
+
+// Función auxiliar para eliminar la foto antigua de la mascota si existe en la nube (Cloudinary)
+const deleteCloudPhoto = async (photoUrl) => {
+  if (!photoUrl || !photoUrl.includes("res.cloudinary.com")) return;
+  try {
+    const parts = photoUrl.split("/upload/")[1];
+    if (!parts) return;
+    const publicIdWithExt = parts.replace(/^v\d+\//, "");
+    const publicId = publicIdWithExt.substring(
+      0,
+      publicIdWithExt.lastIndexOf("."),
+    );
+    await cloudinary.uploader.destroy(publicId);
+  } catch (err) {
+    console.error("Error al eliminar imagen en Cloudinary:", err);
+  }
 };
 
 // Función auxiliar para generar un publicId único de 8 caracteres hexadecimales
@@ -23,10 +41,10 @@ const generatePublicId = () => {
 
 // Helper interno para construir la URL del carnet digital y generar el código QR
 const buildPetQRCode = async (publicId) => {
-  const baseUrl =
-    process.env.FRONTEND_URL ||
-    process.env.CLIENT_URL ||
-    "http://localhost:5173";
+  const baseUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(
+    /\/$/,
+    "",
+  );
   const carnetUrl = `${baseUrl}/?p=${publicId}`;
 
   const qrCodeImage = await QRCode.toDataURL(carnetUrl, {
@@ -62,9 +80,10 @@ const createPet = async (req, res) => {
     }
 
     const publicId = generatePublicId();
-    const photoUrl = req.file
-      ? `/uploads/pets/${req.file.filename}`
-      : req.body.photoUrl || null;
+    // const photoUrl = req.file
+    //   ? `/uploads/pets/${req.file.filename}`
+    //   : req.body.photoUrl || null;
+    const photoUrl = req.file ? req.file.path : req.body.photoUrl || null;
 
     const newPet = await Pet.create({
       publicId,
@@ -129,7 +148,6 @@ const getPetByPublicId = async (req, res) => {
 
     const pet = await Pet.findOne({
       where: { publicId },
-      attributes: { exclude: ["ownerPin"] },
       include: [
         {
           model: MedicalRecord,
@@ -141,6 +159,10 @@ const getPetByPublicId = async (req, res) => {
             "nextDueDate",
             "notes",
           ],
+        },
+        {
+          model: User,
+          attributes: ["vetName"],
         },
       ],
       order: [[MedicalRecord, "dateApplied", "DESC"]],
@@ -210,9 +232,7 @@ const updatePet = async (req, res) => {
     }
 
     const oldPhotoUrl = pet.photoUrl;
-    const photoUrl = req.file
-      ? `/uploads/pets/${req.file.filename}`
-      : pet.photoUrl;
+    const photoUrl = req.file ? req.file.path : pet.photoUrl;
 
     await pet.update({
       name,
@@ -226,7 +246,7 @@ const updatePet = async (req, res) => {
     });
 
     if (req.file && oldPhotoUrl && oldPhotoUrl !== photoUrl) {
-      deleteLocalPhoto(oldPhotoUrl);
+      await deleteCloudPhoto(oldPhotoUrl);
     }
 
     return res.status(200).json({
@@ -253,11 +273,11 @@ const deletePet = async (req, res) => {
         .json({ message: "Mascota no encontrada o sin permisos." });
     }
 
-    // Eliminamos sus registros médicos asociados primero para evitar error de llave foránea en PostgreSQL
+    // Eliminar la mascota y su historial médico asociado de manera segura
     const oldPhotoUrl = pet.photoUrl;
     await MedicalRecord.destroy({ where: { petId: pet.id } });
     await pet.destroy();
-    deleteLocalPhoto(oldPhotoUrl);
+    await deleteCloudPhoto(oldPhotoUrl);
 
     return res
       .status(200)
@@ -269,7 +289,7 @@ const deletePet = async (req, res) => {
 };
 
 module.exports = {
-  deleteLocalPhoto,
+  deleteCloudPhoto,
   generatePublicId,
   buildPetQRCode,
   createPet,
